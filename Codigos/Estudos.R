@@ -39,7 +39,6 @@ post100 = (alpha/(alpha + 100)) * G0 +
 # Distribuição verdadeira
 truth = pnorm(x, mean = 2, sd = 2)
 
-
 pdf(
   file = "estudo_simulacao_1.pdf",
   width = 487/72,
@@ -208,22 +207,9 @@ legend(
 
 dev.off()
 
-
-
-
-
-# Função de distribuição empírica
-F_empirica = function(data, xgrid) {
-  sapply(xgrid, function(t) mean(data <= t))
-}
-
-# Reprodutibilidade
 set.seed(811819)
 
-# ============================================================
-# FUNÇÃO PARA GERAR AMOSTRAS DO PROCESSO DE DIRICHLET
-# VIA ESQUEMA DA URNA DE POLYA
-# ============================================================
+# Funcao para gerar amostras do processo de dirichlet via esquema da urna de polya
 
 rDirProcessPolya = function(n, alpha, amostrador_G0) {
   
@@ -245,10 +231,6 @@ rDirProcessPolya = function(n, alpha, amostrador_G0) {
   x
 }
 
-# ============================================================
-# PARÂMETROS
-# ============================================================
-
 alpha_values = c(0.2, 4, 20, 100)
 
 n = 200
@@ -259,15 +241,9 @@ x_grid = seq(-4, 4, length.out = 500)
 # G0 = N(0,1)
 G0_cdf = pnorm(x_grid, mean = 0, sd = 1)
 
-# Amostrador da distribuição base
 amostrador_G0 = function(n) {
   rnorm(n, mean = 0, sd = 1)
 }
-
-# ============================================================
-# SALVAR FIGURA EM PDF VETORIAL
-# Mesmo padrão do PDF de referência: 486 x 296 pts
-# ============================================================
 
 pdf(
   file = "estudo_simulacao_2.pdf",
@@ -278,20 +254,12 @@ pdf(
   onefile = FALSE
 )
 
-# ============================================================
-# CONFIGURAÇÕES GRÁFICAS
-# ============================================================
-
 par(
   mfrow = c(2, 2),
   mar = c(3, 3, 0.5, 0.5),
   oma = c(0, 0, 0, 0),
   mgp = c(1.7, 0.5, 0)
 )
-
-# ============================================================
-# GRÁFICOS
-# ============================================================
 
 for(alpha in alpha_values) {
   
@@ -351,9 +319,4 @@ for(alpha in alpha_values) {
   )
 }
 
-# ============================================================
-# FECHAR DISPOSITIVO E SALVAR
-# ============================================================
-
 dev.off()
-
