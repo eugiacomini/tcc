@@ -427,7 +427,7 @@ print(colnames(X))
 
 # Agrupamento
 
-k_max = 10
+k_max = 30
 
 # GMM — GAUSSIAN MIXTURE MODEL
 set.seed(seed_base)
