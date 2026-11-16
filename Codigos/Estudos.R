@@ -1,112 +1,229 @@
-# Estudo de Simulacao
-
+# Função de distribuição empírica
 F_empirica = function(data, xgrid) {
   sapply(xgrid, function(t) mean(data <= t))
 }
 
+set.seed(811819)
+
 alpha = 5
 
+# Amostras da distribuição verdadeira N(2, 2²)
 g_n8   = rnorm(8,   mean = 2, sd = 2)
 g_n50  = rnorm(50,  mean = 2, sd = 2)
 g_n100 = rnorm(100, mean = 2, sd = 2)
 
+# Grade de avaliação
 x = seq(-4, 8, length.out = 500)
 
+# Distribuição base G0 = N(0, 1)
 G0 = pnorm(x, mean = 0, sd = 1)
 
+# n = 8
 Fn8 = F_empirica(g_n8, x)
-post8 = (alpha/(alpha + 8)) * G0 + (8/(alpha + 8)) * Fn8
 
+post8 = (alpha/(alpha + 8)) * G0 +
+  (8/(alpha + 8)) * Fn8
+
+# n = 50
 Fn50 = F_empirica(g_n50, x)
-post50 = (alpha/(alpha + 50)) * G0 + (50/(alpha + 50)) * Fn50
 
+post50 = (alpha/(alpha + 50)) * G0 +
+  (50/(alpha + 50)) * Fn50
+
+# n = 100
 Fn100 = F_empirica(g_n100, x)
-post100 = (alpha/(alpha + 100)) * G0 + (100/(alpha + 100)) * Fn100
 
+post100 = (alpha/(alpha + 100)) * G0 +
+  (100/(alpha + 100)) * Fn100
+
+# Distribuição verdadeira
 truth = pnorm(x, mean = 2, sd = 2)
 
-par(mfrow = c(1,3),
-    mar = c(4,4,5.5,1))
 
-#-----------------------------
-# n = 8
-#-----------------------------
-plot(x, post8,
-     type = "l",
-     lwd = 2,
-     col = "black",
-     main = "",
-     ylab = "F(x)",
-     xlab = "x")
+pdf(
+  file = "estudo_simulacao_1.pdf",
+  width = 487/72,
+  height = 296/72,
+  family = "Helvetica",
+  paper = "special",
+  onefile = FALSE
+)
 
-mtext("n = 8", side = 3, line = 2.3, cex = 1.2)
+# Configurações gráficas
+par(
+  mfrow = c(1, 3),
+  mar = c(4, 4, 5.5, 1)
+)
+
+# GRÁFICO 1: n = 8
+
+plot(
+  x, post8,
+  type = "l",
+  lwd = 2,
+  col = "black",
+  main = "",
+  ylab = "F(x)",
+  xlab = "x",
+  ylim = c(0, 1)
+)
+
+mtext(
+  "n = 8",
+  side = 3,
+  line = 2.3,
+  cex = 1.2
+)
 
 lines(x, G0, lty = 2)
 lines(x, Fn8, lty = 3)
-lines(x, truth, col = "royalblue", lty = 1, lwd = 1.5)
 
-legend("bottomright",
-       legend = c("Posteriori E(F|y)", "G0", "Empírica", "Verdadeira"),
-       col = c("black", "black", "black", "royalblue"),
-       lty = c(1,2,3,1),
-       lwd = c(2,1,1,1.5),
-       cex = 0.8,
-       bty = "n")
+lines(
+  x, truth,
+  col = "royalblue",
+  lty = 1,
+  lwd = 1.5
+)
 
-#-----------------------------
-# n = 50
-#-----------------------------
-plot(x, post50,
-     type = "l",
-     lwd = 2,
-     col = "black",
-     main = "",
-     ylab = "F(x)",
-     xlab = "x")
+legend(
+  "bottomright",
+  legend = c(
+    "Posteriori E(F|y)",
+    "G0",
+    "Empírica",
+    "Verdadeira"
+  ),
+  col = c(
+    "black",
+    "black",
+    "black",
+    "royalblue"
+  ),
+  lty = c(1, 2, 3, 1),
+  lwd = c(2, 1, 1, 1.5),
+  cex = 0.8,
+  bty = "n"
+)
 
-mtext("n = 50", side = 3, line = 2.3, cex = 1.2)
+# GRÁFICO 2: n = 50
+
+plot(
+  x, post50,
+  type = "l",
+  lwd = 2,
+  col = "black",
+  main = "",
+  ylab = "F(x)",
+  xlab = "x",
+  ylim = c(0, 1)
+)
+
+mtext(
+  "n = 50",
+  side = 3,
+  line = 2.3,
+  cex = 1.2
+)
 
 lines(x, G0, lty = 2)
 lines(x, Fn50, lty = 3)
-lines(x, truth, col = "royalblue", lty = 1, lwd = 1.5)
 
-legend("bottomright",
-       legend = c("Posteriori E(F|y)", "G0", "Empírica", "Verdadeira"),
-       col = c("black", "black", "black", "royalblue"),
-       lty = c(1,2,3,1),
-       lwd = c(2,1,1,1.5),
-       cex = 0.8,
-       bty = "n")
+lines(
+  x, truth,
+  col = "royalblue",
+  lty = 1,
+  lwd = 1.5
+)
 
-#-----------------------------
-# n = 100
-#-----------------------------
-plot(x, post100,
-     type = "l",
-     lwd = 2,
-     col = "black",
-     main = "",
-     ylab = "F(x)",
-     xlab = "x")
+legend(
+  "bottomright",
+  legend = c(
+    "Posteriori E(F|y)",
+    "G0",
+    "Empírica",
+    "Verdadeira"
+  ),
+  col = c(
+    "black",
+    "black",
+    "black",
+    "royalblue"
+  ),
+  lty = c(1, 2, 3, 1),
+  lwd = c(2, 1, 1, 1.5),
+  cex = 0.8,
+  bty = "n"
+)
 
-mtext("n = 100", side = 3, line = 2.3, cex = 1.2)
+# GRÁFICO 3: n = 100
+
+plot(
+  x, post100,
+  type = "l",
+  lwd = 2,
+  col = "black",
+  main = "",
+  ylab = "F(x)",
+  xlab = "x",
+  ylim = c(0, 1)
+)
+
+mtext(
+  "n = 100",
+  side = 3,
+  line = 2.3,
+  cex = 1.2
+)
 
 lines(x, G0, lty = 2)
 lines(x, Fn100, lty = 3)
-lines(x, truth, col = "royalblue", lty = 1, lwd = 1.5)
 
-legend("bottomright",
-       legend = c("Posteriori E(F|y)", "G0", "Empírica", "Verdadeira"),
-       col = c("black", "black", "black", "royalblue"),
-       lty = c(1,2,3,1),
-       lwd = c(2,1,1,1.5),
-       cex = 0.8,
-       bty = "n")
+lines(
+  x, truth,
+  col = "royalblue",
+  lty = 1,
+  lwd = 1.5
+)
+
+legend(
+  "bottomright",
+  legend = c(
+    "Posteriori E(F|y)",
+    "G0",
+    "Empírica",
+    "Verdadeira"
+  ),
+  col = c(
+    "black",
+    "black",
+    "black",
+    "royalblue"
+  ),
+  lty = c(1, 2, 3, 1),
+  lwd = c(2, 1, 1, 1.5),
+  cex = 0.8,
+  bty = "n"
+)
+
+
+dev.off()
 
 
 
 
-# Estudo de Simulacao do Processo de Dirichlet via Urna de Polya
+
+# Função de distribuição empírica
+F_empirica = function(data, xgrid) {
+  sapply(xgrid, function(t) mean(data <= t))
+}
+
+# Reprodutibilidade
+set.seed(811819)
+
+# ============================================================
+# FUNÇÃO PARA GERAR AMOSTRAS DO PROCESSO DE DIRICHLET
+# VIA ESQUEMA DA URNA DE POLYA
+# ============================================================
 
 rDirProcessPolya = function(n, alpha, amostrador_G0) {
   
@@ -116,23 +233,21 @@ rDirProcessPolya = function(n, alpha, amostrador_G0) {
   
   for(i in 2:n) {
     
-    p_novo = alpha/(alpha + i - 1)
+    p_novo = alpha / (alpha + i - 1)
     
     if(runif(1) < p_novo) {
-      
       x[i] = amostrador_G0(1)
-      
     } else {
-      
-      x[i] = sample(x[1:(i-1)], size = 1)
-      
+      x[i] = sample(x[1:(i - 1)], size = 1)
     }
   }
   
   x
 }
 
-# Parâmetros
+# ============================================================
+# PARÂMETROS
+# ============================================================
 
 alpha_values = c(0.2, 4, 20, 100)
 
@@ -141,35 +256,58 @@ n_rep = 8
 
 x_grid = seq(-4, 4, length.out = 500)
 
-G0_cdf = pnorm(x_grid)
+# G0 = N(0,1)
+G0_cdf = pnorm(x_grid, mean = 0, sd = 1)
 
+# Amostrador da distribuição base
 amostrador_G0 = function(n) {
-  rnorm(n)
+  rnorm(n, mean = 0, sd = 1)
 }
 
-# Gráficos
+# ============================================================
+# SALVAR FIGURA EM PDF VETORIAL
+# Mesmo padrão do PDF de referência: 486 x 296 pts
+# ============================================================
+
+pdf(
+  file = "estudo_simulacao_2.pdf",
+  width = 486 / 72,
+  height = 296 / 72,
+  family = "Helvetica",
+  paper = "special",
+  onefile = FALSE
+)
+
+# ============================================================
+# CONFIGURAÇÕES GRÁFICAS
+# ============================================================
+
 par(
-  mfrow = c(2,2),
+  mfrow = c(2, 2),
   mar = c(3, 3, 0.5, 0.5),
   oma = c(0, 0, 0, 0),
   mgp = c(1.7, 0.5, 0)
 )
 
-for(alpha in alpha_values){
+# ============================================================
+# GRÁFICOS
+# ============================================================
+
+for(alpha in alpha_values) {
   
   plot(
     x_grid,
     G0_cdf,
     type = "l",
     lwd = 3,
-    col = "royalblue4",
-    ylim = c(0,1),
+    col = "royalblue",
+    ylim = c(0, 1),
     main = "",
     xlab = expression(theta),
     ylab = expression(F(theta))
   )
   
-  for(rep in 1:n_rep){
+  for(rep in 1:n_rep) {
     
     amostra = rDirProcessPolya(
       n = n,
@@ -194,7 +332,7 @@ for(alpha in alpha_values){
       expression(G[0]),
       "Realizações"
     ),
-    col = c("royalblue4", "gray40"),
+    col = c("royalblue", "gray40"),
     lwd = c(3, 1),
     cex = 0.9,
     y.intersp = 0.9,
@@ -212,3 +350,10 @@ for(alpha in alpha_values){
     font = 2
   )
 }
+
+# ============================================================
+# FECHAR DISPOSITIVO E SALVAR
+# ============================================================
+
+dev.off()
+

@@ -1,10 +1,17 @@
 source("Funcoes_DPMM.R")
 
-# Geracao das medias: escolha explicita do desenho experimental.
-# "uma_variavel": somente a primeira coordenada tem sinal (cenario dificil).
-# "todas_variaveis": cada coordenada difere em d entre grupos adjacentes.
-# Assim, a distancia euclidiana entre centroides adjacentes passa a ser
-# sqrt(p) * d. Nao confundir d com a distancia euclidiana total neste caso.
+cholesky_transformation = function(Y) {
+  Y = as.matrix(Y)
+  
+  S = stats::cov(Y)
+  L = t(chol(S))
+  
+  Y_centered = sweep(Y, 2, colMeans(Y), "-")
+  
+  t(solve(L, t(Y_centered)))
+}
+
+
 criar_medias_grupos = function(K, p, d,
                                padrao_medias = "todas_variaveis") {
   if (!padrao_medias %in% c("uma_variavel", "todas_variaveis")) {
@@ -20,14 +27,16 @@ criar_medias_grupos = function(K, p, d,
 }
 
 alocar_n_por_grupo = function(n, K) {
-  if (n < K) stop("O tamanho amostral n deve ser maior ou igual ao numero de grupos K.")
+  if (n < K) stop("O tamanho amostral n deve ser maior 
+  ou igual ao numero de grupos K.")
   tamanhos = rep(n %/% K, K)
   resto = n %% K
   if (resto > 0) tamanhos[seq_len(resto)] = tamanhos[seq_len(resto)] + 1L
   tamanhos
 }
 
-seed_simulacao = function(seed_base, id_dados, id_metodo = 0L,id_alpha = 0L, id_g0 = 0L) {
+seed_simulacao = function(seed_base, id_dados, id_metodo = 0L,
+                          id_alpha = 0L, id_g0 = 0L) {
   valor = as.double(seed_base) + as.double(id_dados) * 100000 +
     as.double(id_metodo) * 1000 + as.double(id_alpha) * 100 + as.double(id_g0)
   as.integer(valor %% 2147483646 + 1)
@@ -73,10 +82,6 @@ executar_simulacoes_dpmm = function(
     max_linhas_aba = 900000,
     limite_aviso_dpmm = 10000,
     confirmar_execucao_grande = FALSE) {
-  
-  # ------------------------------------------------------------
-  # 1. Validacao inicial
-  # ------------------------------------------------------------
   
   pacotes = c("mvtnorm", "mclust", "openxlsx", "cluster")
   
@@ -195,7 +200,6 @@ executar_simulacoes_dpmm = function(
     stop("'kmeans_grid' deve conter inteiros positivos.")
   }
   
-  # Ordenar e remover candidatos duplicados.
   kmeans_grid = sort(unique(as.integer(kmeans_grid)))
   
   if (!any(kmeans_grid <= min(n_values))) {
@@ -302,9 +306,6 @@ executar_simulacoes_dpmm = function(
       dpmm_coclustering_samples != as.integer(dpmm_coclustering_samples)) {
     stop("dpmm_coclustering_samples deve ser um inteiro positivo.")
   }
-  # ------------------------------------------------------------
-  # 2. Criacao dos cenarios e dos IDs
-  # ------------------------------------------------------------
   
   grid_dados = expand.grid(
     K = as.integer(K_values),
@@ -347,9 +348,6 @@ executar_simulacoes_dpmm = function(
     seq_len(nrow(grid_dados))
   )
   
-  
-  # Garantir que todos os dados de A1 sejam processados primeiro,
-  # depois A2, ..., ate C3.
   ordem_cenarios = c(
     "A1", "A2", "A3",
     "B1", "B2", "B3",
@@ -398,12 +396,6 @@ executar_simulacoes_dpmm = function(
     )
   }
   
-  # ------------------------------------------------------------
-  # Silhouette media para uma particao
-  # ------------------------------------------------------------
-  # A Silhouette nao e definida para k = 1 nem para k = n.
-  # A distancia euclidiana e calculada uma vez por conjunto simulado
-  # e reutilizada por todos os metodos/configuracoes.
   calcular_silhouette_media = function(clusters, distancia) {
     if (is.null(clusters) || length(clusters) < 3L || is.null(distancia)) {
       return(NA_real_)
@@ -428,10 +420,6 @@ executar_simulacoes_dpmm = function(
       if (length(valor) != 1L || !is.finite(valor)) NA_real_ else valor
     }, error = function(e) NA_real_)
   }
-  
-  # ------------------------------------------------------------
-  # 3. Funcao para registrar resultados
-  # ------------------------------------------------------------
   
   registrar = function(
     d, metodo, clusters, tempo, erro = NA_character_,
@@ -556,11 +544,6 @@ executar_simulacoes_dpmm = function(
     )
   }
   
-  # ------------------------------------------------------------
-  # Funcao auxiliar para calcular o resumo estatistico oficial
-  # ------------------------------------------------------------
-  # Este mesmo calculo e usado tanto nos arquivos individuais dos
-  # cenarios quanto no arquivo consolidado, evitando resumos diferentes.
   calcular_resumo_medias = function(dados, n_replicas) {
     
     df_resumo = data.frame()
@@ -606,9 +589,6 @@ executar_simulacoes_dpmm = function(
       )
     }
     
-    # O tempo e tratado separadamente: somente sua media e mantida.
-    # Acerto_K e K_posterior_* permanecem nos resultados por replica, mas
-    # nao fazem parte da aba Resumo_Medias.
     metricas = c(
       "ARI", "NMI", "Silhouette", "K_estimado",
       "Silhouette_Coclustering", "Coclustering_Dahl_Loss",
@@ -655,10 +635,6 @@ executar_simulacoes_dpmm = function(
     df_resumo = do.call(rbind, linhas_resumo)
     rownames(df_resumo) = NULL
     
-    # Limpeza das colunas que nao devem aparecer em Resumo_Medias.
-    # Remove especificamente K_estimado_N_validas, Acerto_K e todas as
-    # estatisticas derivadas de K_posterior_*; preserva media, DP e mediana
-    # de K_estimado. Quantis e IC95 ja nao sao calculados nesta versao.
     nomes_minusculos = tolower(names(df_resumo))
     colunas_remover = names(df_resumo)[
       nomes_minusculos %in% c(
@@ -670,7 +646,6 @@ executar_simulacoes_dpmm = function(
       df_resumo[colunas_remover] = NULL
     }
     
-    # Posiciona a media do tempo imediatamente antes de ARI_media.
     if (all(c("Tempo_segundos_media", "ARI_media") %in% names(df_resumo))) {
       ordem_colunas = setdiff(names(df_resumo), "Tempo_segundos_media")
       pos_ari = match("ARI_media", ordem_colunas)
@@ -708,10 +683,6 @@ executar_simulacoes_dpmm = function(
     rownames(df_resumo) = NULL
     df_resumo
   }
-  
-  # ------------------------------------------------------------
-  # 4. Loop principal: geracao dos dados e metodos
-  # ------------------------------------------------------------
   
   for (i in seq_len(total_dados)) {
     
@@ -832,9 +803,6 @@ executar_simulacoes_dpmm = function(
       )
     }
     
-    # 4.1 K-means: testar o grid e selecionar o k com maior Silhouette media.
-    # O k = 1 e executado, mas sua Silhouette e NA por definicao.
-    # O k = n tambem nao pode ser avaliado por Silhouette.
     kmeans_grid_atual = kmeans_grid[kmeans_grid <= n]
     resultados_km_candidatos = vector("list", length(kmeans_grid_atual))
     
@@ -878,8 +846,6 @@ executar_simulacoes_dpmm = function(
       df_km_candidatos = do.call(rbind, resultados_km_candidatos)
       rownames(df_km_candidatos) = NULL
       
-      # Selecionar a maior Silhouette media valida; em empate, o menor k
-      # vence porque o grid foi ordenado no inicio da funcao.
       candidatos_validos = which(
         df_km_candidatos$Status == "OK" &
           is.finite(df_km_candidatos$Silhouette)
@@ -890,9 +856,6 @@ executar_simulacoes_dpmm = function(
           which.max(df_km_candidatos$Silhouette[candidatos_validos])
         ]
       } else {
-        # Caso especial: nao ha Silhouette calculavel (por exemplo, n < 3).
-        # Mantem o menor k >= 2 com ajuste bem-sucedido; se nao houver,
-        # utiliza o menor k bem-sucedido disponivel.
         candidatos_fallback = which(
           df_km_candidatos$Status == "OK" &
             df_km_candidatos$K_testado >= 2L
@@ -929,7 +892,6 @@ executar_simulacoes_dpmm = function(
       
     }
     
-    # 4.2 Modelo de mistura Gaussiana (GMM).
     set.seed(seed_simulacao(seed_base, i, 2L))
     
     gmm = executar_cronometrado(function() {
@@ -979,7 +941,6 @@ executar_simulacoes_dpmm = function(
       )
     }
     
-    # 4.3 Hierarquico opcional.
     if (isTRUE(incluir_hierarquico)) {
       hc = executar_cronometrado(function() {
         stats::cutree(
@@ -1003,7 +964,6 @@ executar_simulacoes_dpmm = function(
       resultados[[contador_resultados]] = res
     }
     
-    # 4.4 DPMM: cada combinacao de prior de alpha e G0.
     for (ia in seq_len(nrow(alpha_priors))) {
       
       al = alpha_priors[ia, , drop = FALSE]
@@ -1015,10 +975,6 @@ executar_simulacoes_dpmm = function(
         alpha_label = as.character(al$Prior_alpha[[1]])
         g0_label = as.character(g0$Config_G0[[1]])
         
-        # Resolver parametros de G0 para ESTE conjunto de dados.
-        # mu0_media_X usa o centro empirico; beta0_variancia_X e mantido
-        # como condicao de sensibilidade, pois pode refletir separacao entre
-        # clusters e nao apenas variacao dentro dos clusters.
         mu0_tipo = as.character(g0$mu0_tipo[[1]])
         beta0_tipo = as.character(g0$beta0_tipo[[1]])
         p_atual = ncol(d$X)
@@ -1088,7 +1044,8 @@ executar_simulacoes_dpmm = function(
           
           gs = fit$groups_samples
           if (is.null(gs) || !is.matrix(gs) || ncol(gs) != nrow(d$X)) {
-            stop("O ajuste nao retornou groups_samples no formato draws x observacoes.")
+            stop("O ajuste nao retornou groups_samples no formato
+            draws x observacoes.")
           }
           
           indices_C = fit$indices_coclustering
@@ -1206,10 +1163,11 @@ executar_simulacoes_dpmm = function(
         resultados[[contador_resultados]] = res
         
         # Mostrar ARI e K de Dahl assim que CADA ajuste DPMM termina.
-        # Uma replica gera uma linha para cada priori de alpha e configuracao G0.
         if (isTRUE(verbose)) {
           cat(sprintf(
-            "[DPMM] Cenario=%s | Replica=%d/%d | alpha=%s | G0=%s | K_real=%d | K_Dahl=%s | K_posterior_moda=%s | ARI=%s | Status=%s\n",
+            "[DPMM] Cenario=%s | Replica=%d/%d | alpha=%s | G0=%s |
+            K_real=%d | K_Dahl=%s | K_posterior_moda=%s | ARI=%s | 
+            Status=%s\n",
             as.character(d$Cenario),
             as.integer(d$Replica),
             as.integer(n_replicas),
@@ -1225,8 +1183,6 @@ executar_simulacoes_dpmm = function(
         }
       }
     }
-    
-    
     
     # Salvar o cenario assim que todas as suas simulacoes terminarem.
     cenario_atual = as.character(grid_dados$Cenario[i])
@@ -1278,9 +1234,6 @@ executar_simulacoes_dpmm = function(
         firstRow = TRUE
       )
       
-      # Usar exatamente o mesmo resumo estatistico do arquivo geral.
-      # Como resultados_cenario contem apenas este cenario, o arquivo ja
-      # pode ser salvo agora sem depender da conclusao dos demais cenarios.
       resumo_medias_cenario = calcular_resumo_medias(
         resultados_cenario,
         n_replicas
@@ -1335,10 +1288,6 @@ executar_simulacoes_dpmm = function(
     
   }
   
-  # ------------------------------------------------------------
-  # 5. Consolidacao dos resultados
-  # ------------------------------------------------------------
-  
   df_resultados = if (length(resultados)) {
     do.call(rbind, resultados)
   } else {
@@ -1351,16 +1300,8 @@ executar_simulacoes_dpmm = function(
     data.frame()
   }
   
-  # ------------------------------------------------------------
-  # 6. Resumo estatistico
-  # ------------------------------------------------------------
-  
   # Reutiliza o mesmo calculo aplicado ao fim de cada cenario.
   df_resumo = calcular_resumo_medias(df_resultados, n_replicas)
-  
-  # ------------------------------------------------------------
-  # 7. Configuracoes gerais da execucao
-  # ------------------------------------------------------------
   
   config_execucao = data.frame(
     Parametro = c(
@@ -1429,74 +1370,7 @@ executar_simulacoes_dpmm = function(
     stringsAsFactors = FALSE
   )
   
-  # ------------------------------------------------------------
-  # 8. Leia-me incorporado em Config_Execucao
-  # ------------------------------------------------------------
-  
-  leia_me = data.frame(
-    Topico = c(
-      "Abas de cenarios", "Resumo_Medias", "ARI", "NMI",
-      "Silhouette", "Acerto_K", "Tempo", "KMeans",
-      "GMM", "DPMM", "Priori G0", "Matriz de coclustering", "IDs dos dados", "Mensagens no console"
-    ),
-    
-    Descricao = c(
-      paste0(
-        "As abas dos cenarios executados guardam resultados ",
-        "individuais por replica, metodo e configuracao."
-      ),
-      paste0(
-        "Uma linha por metodo/cenario/n/p/prior; o KMeans principal usa ",
-        "o k selecionado por Silhouette em cada replica. O resumo inclui ",
-        "N validas, media, DP e mediana para ARI, NMI, Silhouette e K_estimado; Tempo_segundos_media aparece antes de ARI_media. Acerto_K e K_posterior_* nao sao incluidos."
-      ),
-      "Adjusted Rand Index; maior e melhor, com 1 indicando concordancia perfeita.",
-      "NMI simetrica definida como 2*MI/(H_estimado+H_real); varia de 0 a 1.",
-      "Media dos widths silhouette; NA para k=1, k=n ou particao invalida.",
-      "Indicador por replica: 1 quando K estimado coincide com o verdadeiro, 0 caso contrario; nao aparece no Resumo_Medias.",
-      "Tempo em segundos; no resumo e exibida somente a media.",
-      "Testa cada k de kmeans_grid com nstart=50; escolhe o maior silhouette medio valido.",
-      "Mclust seleciona o numero de componentes pelo BIC ate gmm_G_max.",
-      paste0(
-        "A particao final do Processo_Dirichlet e obtida pelo metodo de Dahl: ",
-        "seleciona, dentre os draws usados para calcular C, a particao cuja matriz ",
-        "de co-associacao tem menor distancia quadratica para a matriz media C. ",
-        "K_posterior_media/mediana/moda continuam como diagnosticos da cadeia; ",
-        "K_Dahl_Livre e o K de Dahl sem restricao; ",
-        "Dahl_Draw_Index identifica a linha selecionada de groups_samples."
-      ),
-      paste0(
-        "G0-1 original; G0-2 centro empirico mu0=colMeans(X); ",
-        "G0-3 beta0=variancia marginal por dimensao; G0-4 combinacao das duas adaptacoes. ",
-        "As configuracoes empiricas sao plug-in e G0-3/G0-4 sao analises de sensibilidade."
-      ),
-      paste0(
-        "C e calculada a partir de ate dpmm_coclustering_samples draws posteriores ",
-        "aleatoriamente selecionados. Os indices exatos sao mantidos e Dahl compara ",
-        "as particoes desses mesmos draws com C, garantindo consistencia entre ",
-        "a matriz media e a particao representativa selecionada."
-      ),
-      "Formato: Cenario + Replica + identificador do dataset, por exemplo A1R1D000001.",
-      "Exibe Dados i/total, sem barra de progresso."
-    ),
-    
-    stringsAsFactors = FALSE
-  )
-  
-  # Adicionar as descricoes ao final da configuracao.
-  config_execucao = rbind(
-    config_execucao,
-    data.frame(
-      Parametro = paste0("Leia-me: ", leia_me$Topico),
-      Valor = leia_me$Descricao,
-      stringsAsFactors = FALSE
-    )
-  )
-  
-  # ------------------------------------------------------------
-  # 9. Criacao do arquivo Excel
-  # ------------------------------------------------------------
-  
+  # Criacao do arquivo Excel
   wb = openxlsx::createWorkbook()
   
   estilo_cabecalho = openxlsx::createStyle(
@@ -1678,10 +1552,6 @@ executar_simulacoes_dpmm = function(
     add_sheet_chunked("Dados_Gerados", df_dados)
   }
   
-  # ------------------------------------------------------------
-  # 10. Salvar arquivo
-  # ------------------------------------------------------------
-  
   diretorio_saida = dirname(arquivo)
   
   if (!dir.exists(diretorio_saida)) {
@@ -1705,10 +1575,6 @@ executar_simulacoes_dpmm = function(
     )
   }
   
-  # ------------------------------------------------------------
-  # 11. Retorno
-  # ------------------------------------------------------------
-  
   invisible(list(
     arquivo = normalizePath(arquivo, mustWork = FALSE),
     Resultados = df_resultados,
@@ -1718,7 +1584,7 @@ executar_simulacoes_dpmm = function(
 }
 
 #Simulacao
-hiper_G0 = configuracoes_G0(sensibilidade = FALSE)
+hiper_G0 = configuracoes_G0(sensibilidade = TRUE)
 
 saida = executar_simulacoes_dpmm(
   n_replicas = 20,

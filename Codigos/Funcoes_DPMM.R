@@ -96,7 +96,8 @@ clustering_dpmm = function(
   if (!is.null(seed)) set.seed(seed)
   if (is.data.frame(X)) X = data.matrix(X) else X = as.matrix(X)
   storage.mode(X) = "double"
-  if (nrow(X) < 1L || ncol(X) < 1L) stop("X deve ter ao menos uma linha e uma coluna.")
+  if (nrow(X) < 1L || ncol(X) < 1L) stop("X deve ter ao menos 
+  uma linha e uma coluna.")
   if (any(!is.finite(X))) stop("X nao pode conter NA, NaN ou valores infinitos.")
   
   n = nrow(X)
@@ -112,7 +113,8 @@ clustering_dpmm = function(
   )
   if (any(!is.finite(unlist(prior))) || any(prior$lambda0 <= 0) ||
       any(prior$alfa0 <= 0) || any(prior$beta0 <= 0)) {
-    stop("mu0 deve ser finito; lambda0, alfa0 e beta0 devem ser positivos e finitos.")
+    stop("mu0 deve ser finito; lambda0, alfa0 e beta0
+    devem ser positivos e finitos.")
   }
   
   hiper = utils::modifyList(list(a_alpha = 1, b_alpha = 1), hiperparametros)
@@ -205,7 +207,8 @@ clustering_dpmm = function(
       K_samples[saved] = K
     }
     if (verbose && (iter %% progress_step == 0L || iter == n_iter)) {
-      cat(sprintf("Iteracao %d/%d | grupos: %d | alpha: %.4f\n", iter, n_iter, K, alpha))
+      cat(sprintf("Iteracao %d/%d | grupos: %d | alpha: %.4f\n", iter, 
+                  n_iter, K, alpha))
     }
   }
   tempo_mcmc = as.numeric(difftime(Sys.time(), tempo_mcmc_inicio, units = "secs"))
@@ -238,9 +241,11 @@ clustering_dpmm = function(
     }
     coclustering = coclustering / n_coclustering_usadas
     diag(coclustering) = 1
-    tempo_coclustering = as.numeric(difftime(Sys.time(), inicio_coclustering, units = "secs"))
+    tempo_coclustering = as.numeric(difftime(Sys.time(), 
+                                             inicio_coclustering, units = "secs"))
   }
-  tempo_total = as.numeric(difftime(Sys.time(), tempo_total_inicio, units = "secs"))
+  tempo_total = as.numeric(difftime(Sys.time(), 
+                                    tempo_total_inicio, units = "secs"))
   
   structure(list(
     prioris = prior,
@@ -251,7 +256,8 @@ clustering_dpmm = function(
     coclustering = coclustering,
     n_coclustering_samples = n_coclustering_usadas,
     indices_coclustering = indices_coclustering,
-    tempos = list(mcmc = tempo_mcmc, coclustering = tempo_coclustering, total = tempo_total),
+    tempos = list(mcmc = tempo_mcmc, coclustering = tempo_coclustering, 
+                  total = tempo_total),
     call = match.call()
   ), class = "clustering_dpmm")
 }
@@ -408,7 +414,8 @@ dpmm_particao_dahl = function(groups_samples, C, indices_draws = NULL,
   # Opcao de resumo: restringir a escolha ao K modal a posteriori.
   # A MATRIZ C NAO e alterada nem e utilizado o K verdadeiro.
   # Esta nao e a estimativa original de Dahl, e sim Dahl com K restrito.
-  K_restrito_efetivo = if (is.null(K_restrito)) NA_integer_ else as.integer(K_restrito)
+  K_restrito_efetivo = if (is.null(K_restrito)) NA_integer_
+  else as.integer(K_restrito)
   if (is.null(K_restrito)) {
     elegiveis = seq_along(perdas)
   } else {
@@ -453,5 +460,4 @@ dpmm_particao_dahl = function(groups_samples, C, indices_draws = NULL,
     dahl_losses = perdas,
     candidate_draw_indices = indices_draws,
     distance = D
-  )
-}
+  )}
