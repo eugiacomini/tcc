@@ -1,4 +1,3 @@
-# Mapa de calor do ARI medio
 library(readxl)
 library(dplyr)
 library(purrr)
@@ -59,7 +58,7 @@ resumo_ari = dados_dp |>
     Cor_texto = if_else(ARI_medio >= 0.65, "white", "black")
   )
 
-# Grafico ARI
+# Mapa de calor do ARI medio
 grafico_ari = ggplot(
   resumo_ari,
   aes(x = Cenario, y = G0, fill = ARI_medio)
