@@ -3,7 +3,7 @@ load("Ambientes/meu_ambiente.RData")
 pacotes = c(
   "readxl", "dplyr", "ggplot2", "plotly", "gridExtra",
   "mclust", "cluster", "reshape2", "corrplot", "clusterCrit",
-  "htmlwidgets","mvtnorm","openxlsx", "qgraph", "tibble"
+  "htmlwidgets","mvtnorm","openxlsx", "qgraph", "tibble", "scales"
 )
 
 # Instalar apenas os pacotes ausentes
@@ -1390,11 +1390,6 @@ p_trace_K = ggplot(
 
 print(p_trace_K)
 
-
-# ==================================================
-# GRÁFICO 2 — CONVERGÊNCIA DA MÉDIA ACUMULADA
-# ==================================================
-
 p_media_K = ggplot(
   tracos_K,
   aes(x = Amostra, y = K_media_acumulada)
@@ -1427,10 +1422,6 @@ p_media_K = ggplot(
   )
 
 print(p_media_K)
-
-# ==================================================
-# GRÁFICO 3 — AUTOCORRELAÇÃO DE K
-# ==================================================
 
 listas_tracos = split(
   tracos_K,
@@ -1625,10 +1616,6 @@ rotulos = setNames(
   configs
 )
 
-# ============================================================
-# GRAFICO
-# ============================================================
-
 p_heatmap_ARI = ggplot(
   dados_heatmap_ARI,
   aes(
@@ -1726,7 +1713,6 @@ p_heatmap_ARI = ggplot(
 # Exibir
 print(p_heatmap_ARI)
 
-
 ggsave(
   filename = "ari_dpmm_lol.pdf",
   plot = p_heatmap_ARI,
@@ -1734,8 +1720,6 @@ ggsave(
   height = 9,
   bg = "white"
 )
-
-# PCA DPMM
 
 nome_config = "G0-5_beta_forte__Gamma(2,4)"
 
@@ -1926,18 +1910,6 @@ htmlwidgets::saveWidget(
   file = "PCA_3D_DPMM_G05_Gamma24_Scale_Cholesky.html",
   selfcontained = TRUE
 )
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ANALISE E VALIDACAO DOS AGRUPAMENTOS DE JOGADORES
@@ -2143,12 +2115,6 @@ tabela_comparativa$Indice_silhueta = round(
 
 View(tabela_comparativa)
 
-
-# ============================================================
-# TABELA COMPARATIVA DOS METODOS
-# Incluindo K a posteriori e K de Dahl
-# ============================================================
-
 # Reunir todos os modelos
 todas_estruturas = c(
   list(
@@ -2165,10 +2131,6 @@ tabela_comparativa = do.call(
 )
 
 rownames(tabela_comparativa) = NULL
-
-# ------------------------------------------------------------
-# Recuperar K posterior e K de Dahl do DPMM
-# ------------------------------------------------------------
 
 # Identificadores usados no codigo original
 chaves_dpmm = paste(
@@ -2193,10 +2155,6 @@ tabela_comparativa$K_posteriori = round(
 tabela_comparativa$K_Dahl =
   resultados_dpmm$K_Dahl[indices_dpmm]
 
-# ------------------------------------------------------------
-# Organizar as colunas
-# ------------------------------------------------------------
-
 tabela_comparativa = tabela_comparativa %>%
   select(
     Modelo,
@@ -2219,8 +2177,6 @@ print(tabela_comparativa)
 
 View(tabela_comparativa)
 
-
-
 jogadores_por_config = lapply(
   particoes,
   function(p) {
@@ -2231,8 +2187,6 @@ jogadores_por_config = lapply(
     )
   }
 )
-
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
 
 for (nome in nome_config) {
   cat("\nCONFIGURACAO:", nome, "\n")
@@ -2283,26 +2237,6 @@ print(perfil_clusters)
 
 
 
-
-
-
-# ============================================================
-# MAPA DE CALOR DOS PERFIS — DPMM COM CHOLESKY
-# Grupos e variáveis ordenados por similaridade
-# Escala de cores fixa: -3 a 3
-# ============================================================
-
-# 1. PACOTES
-library(dplyr)
-library(reshape2)
-library(scales)
-
-# ------------------------------------------------------------
-# 2. RECUPERAR A PARTICAO DO DPMM COM CHOLESKY
-# ------------------------------------------------------------
-
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
-
 particao = particoes[[nome_config]]
 
 if (is.null(particao)) {
@@ -2332,10 +2266,6 @@ stopifnot(
   all(is.finite(X_padronizado))
 )
 
-# ------------------------------------------------------------
-# 3. CALCULAR PERFIS MEDIOS DOS GRUPOS
-# ------------------------------------------------------------
-
 # Usar variaveis padronizadas ANTES de Cholesky
 # para manter a interpretacao original das variaveis
 
@@ -2359,10 +2289,6 @@ perfil_medio = base_perfil %>%
     .groups = "drop"
   )
 
-# ------------------------------------------------------------
-# 4. CONSTRUIR MATRIZ DOS PERFIS
-# ------------------------------------------------------------
-
 matriz_perfis = as.matrix(
   perfil_medio[, variaveis, drop = FALSE]
 )
@@ -2374,10 +2300,6 @@ rownames(matriz_perfis) = paste0(
   perfil_medio$N_jogadores,
   ")"
 )
-
-# ------------------------------------------------------------
-# 5. ORDENAR OS GRUPOS POR SIMILARIDADE
-# ------------------------------------------------------------
 
 # Distancia euclidiana entre perfis medios
 dist_linhas = dist(matriz_perfis)
@@ -2392,10 +2314,6 @@ ordem_linhas = rownames(matriz_perfis)[
   hc_linhas$order
 ]
 
-# ------------------------------------------------------------
-# 6. ORDENAR AS VARIAVEIS POR SIMILARIDADE
-# ------------------------------------------------------------
-
 # Distancia entre os perfis das variaveis
 dist_colunas = dist(t(matriz_perfis))
 
@@ -2407,10 +2325,6 @@ hc_colunas = hclust(
 ordem_colunas = colnames(matriz_perfis)[
   hc_colunas$order
 ]
-
-# ------------------------------------------------------------
-# 7. REORGANIZAR A MATRIZ
-# ------------------------------------------------------------
 
 matriz_perfis_ord = matriz_perfis[
   ordem_linhas,
@@ -2438,10 +2352,6 @@ dados_heatmap$Variavel = factor(
   dados_heatmap$Variavel,
   levels = ordem_colunas
 )
-
-# ------------------------------------------------------------
-# 8. MAPA DE CALOR
-# ------------------------------------------------------------
 
 grafico_heatmap = ggplot(
   dados_heatmap,
@@ -2512,15 +2422,7 @@ grafico_heatmap = ggplot(
     )
   )
 
-# ------------------------------------------------------------
-# 9. EXIBIR O GRAFICO
-# ------------------------------------------------------------
-
 print(grafico_heatmap)
-
-# ------------------------------------------------------------
-# 10. SALVAR AS FIGURAS
-# ------------------------------------------------------------
 
 ggsave(
   filename = "mapa_calor_perfis.pdf",
@@ -2531,23 +2433,12 @@ ggsave(
   bg = "white"
 )
 
-
-
-# ============================================================
-# TRAJETORIA A POSTERIORI DE K — DP_LoL,10
-# Media a posteriori e K de Dahl
-# ============================================================
-
-# 1. Selecionar modelo
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
-
 ajuste = modelos[[nome_config]]
 
 if (is.null(ajuste)) {
   stop("Modelo DP_LoL,10 nao encontrado.")
 }
 
-# 2. Recuperar amostras posteriores
 K_samples = ajuste$K_samples
 
 if (is.null(K_samples) || length(K_samples) == 0) {
@@ -2560,7 +2451,6 @@ if (is.null(K_samples) || length(K_samples) == 0) {
 
 K_samples = as.integer(K_samples)
 
-# 3. Organizar dados
 dados_K = data.frame(
   Amostra = seq_along(K_samples),
   K = K_samples
@@ -2569,7 +2459,6 @@ dados_K = data.frame(
 media_K = mean(K_samples)
 K_Dahl = 22
 
-# 4. Linhas de referencia
 referencias = data.frame(
   Referencia = factor(
     c("Média a posteriori", "K de Dahl"),
@@ -2578,7 +2467,6 @@ referencias = data.frame(
   Valor = c(media_K, K_Dahl)
 )
 
-# 5. Grafico
 p_trace_K = ggplot(
   dados_K,
   aes(x = Amostra, y = K)
@@ -2711,25 +2599,6 @@ ggsave(
 )
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ============================================================
-# AUTOCORRELACAO DE K — DP_LoL,10
-# G0-5_beta_forte + Gamma(2,4)
-# ============================================================
-
 if (!exists("modelos")) {
   
   objetos = readRDS(
@@ -2739,17 +2608,11 @@ if (!exists("modelos")) {
   modelos = objetos$modelos
 }
 
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
-
 ajuste = modelos[[nome_config]]
 
 if (is.null(ajuste)) {
   stop("Modelo DP_LoL,10 nao encontrado.")
 }
-
-# ------------------------------------------------------------
-# 2. RECUPERAR AS AMOSTRAS A POSTERIORI DE K
-# ------------------------------------------------------------
 
 K_samples = ajuste$K_samples
 
@@ -2768,10 +2631,6 @@ if (length(K_samples) < 2 || anyNA(K_samples)) {
   stop("Amostras de K insuficientes ou com valores ausentes.")
 }
 
-# ------------------------------------------------------------
-# 3. CALCULAR A AUTOCORRELACAO
-# ------------------------------------------------------------
-
 acf_K = acf(
   K_samples,
   lag.max = min(60, length(K_samples) - 1),
@@ -2787,11 +2646,6 @@ dados_acf = data.frame(
 
 # Limites aproximados sob hipotese de ruido branco
 limite = 1.96 / sqrt(length(K_samples))
-
-
-# ------------------------------------------------------------
-# 4. GRAFICO DA AUTOCORRELACAO
-# ------------------------------------------------------------
 
 p_acf_K = ggplot(
   dados_acf,
@@ -2888,23 +2742,6 @@ ggsave(
 )
 
 
-
-
-
-
-
-
-
-
-# ============================================================
-# MEDIA ACUMULADA DE K — DP_LoL,10
-# G0-5_beta_forte + Gamma(2,4)
-# ============================================================
-
-# ------------------------------------------------------------
-# 1. RECUPERAR OS MODELOS, SE NECESSARIO
-# ------------------------------------------------------------
-
 if (!exists("modelos")) {
   
   objetos = readRDS(
@@ -2914,21 +2751,11 @@ if (!exists("modelos")) {
   modelos = objetos$modelos
 }
 
-# ------------------------------------------------------------
-# 2. SELECIONAR O MODELO DP_LoL,10
-# ------------------------------------------------------------
-
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
-
 ajuste = modelos[[nome_config]]
 
 if (is.null(ajuste)) {
   stop("Modelo DP_LoL,10 nao encontrado.")
 }
-
-# ------------------------------------------------------------
-# 3. RECUPERAR AS AMOSTRAS A POSTERIORI DE K
-# ------------------------------------------------------------
 
 K_samples = ajuste$K_samples
 
@@ -2946,10 +2773,6 @@ K_samples = as.numeric(K_samples)
 if (length(K_samples) < 2 || anyNA(K_samples)) {
   stop("Amostras de K insuficientes ou invalidas.")
 }
-
-# ------------------------------------------------------------
-# 4. CALCULAR A MEDIA ACUMULADA
-# ------------------------------------------------------------
 
 n_amostras = length(K_samples)
 
@@ -2985,10 +2808,6 @@ cat(
   "\n"
 )
 
-# ------------------------------------------------------------
-# 5. LINHAS DE REFERENCIA
-# ------------------------------------------------------------
-
 referencias = data.frame(
   Referencia = factor(
     c("Média a posteriori", "K de Dahl"),
@@ -2996,10 +2815,6 @@ referencias = data.frame(
   ),
   Valor = c(media_K, K_Dahl)
 )
-
-# ------------------------------------------------------------
-# 6. GRAFICO DA MEDIA ACUMULADA
-# ------------------------------------------------------------
 
 p_media_K = ggplot(
   dados_media,
@@ -3120,21 +2935,6 @@ ggsave(
 )
 
 
-
-
-
-
-
-
-# ============================================================
-# TRAJETORIA A POSTERIORI DE ALPHA — DP_LoL,10
-# G0-5_beta_forte + Gamma(2,4)
-# ============================================================
-
-# ------------------------------------------------------------
-# 1. RECUPERAR OS MODELOS, SE NECESSARIO
-# ------------------------------------------------------------
-
 if (!exists("modelos")) {
   
   objetos = readRDS(
@@ -3144,21 +2944,11 @@ if (!exists("modelos")) {
   modelos = objetos$modelos
 }
 
-# ------------------------------------------------------------
-# 2. SELECIONAR O MODELO DP_LoL,10
-# ------------------------------------------------------------
-
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
-
 ajuste = modelos[[nome_config]]
 
 if (is.null(ajuste)) {
   stop("Modelo DP_LoL,10 nao encontrado.")
 }
-
-# ------------------------------------------------------------
-# 3. RECUPERAR AS AMOSTRAS A POSTERIORI DE ALPHA
-# ------------------------------------------------------------
 
 alpha_samples = as.numeric(ajuste$alpha_samples)
 
@@ -3168,10 +2958,6 @@ if (
 ) {
   stop("Amostras de alpha ausentes ou invalidas.")
 }
-
-# ------------------------------------------------------------
-# 4. ORGANIZAR OS DADOS
-# ------------------------------------------------------------
 
 n_amostras = length(alpha_samples)
 
@@ -3204,18 +2990,11 @@ cat(
   n_amostras, "\n"
 )
 
-# ------------------------------------------------------------
-# 5. LINHA DE REFERENCIA
-# ------------------------------------------------------------
 
 referencia_alpha = data.frame(
   Referencia = "Média a posteriori",
   Valor = media_alpha
 )
-
-# ------------------------------------------------------------
-# 6. GRAFICO DA TRAJETORIA DE ALPHA
-# ------------------------------------------------------------
 
 p_trace_alpha = ggplot(
   dados_alpha,
@@ -3286,10 +3065,8 @@ p_trace_alpha = ggplot(
   theme_classic(base_size = 12) +
   
   theme(
-    # Remover grade
     panel.grid = element_blank(),
     
-    # Eixos pretos
     axis.line = element_line(
       color = "black",
       linewidth = 0.6
@@ -3320,7 +3097,6 @@ p_trace_alpha = ggplot(
       color = "black"
     ),
     
-    # Legenda abaixo do grafico
     legend.position = "bottom",
     
     legend.direction = "horizontal",
@@ -3340,15 +3116,7 @@ p_trace_alpha = ggplot(
     )
   )
 
-# ------------------------------------------------------------
-# 7. EXIBIR
-# ------------------------------------------------------------
-
 print(p_trace_alpha)
-
-# ------------------------------------------------------------
-# 8. SALVAR PARA A DISSERTACAO
-# ------------------------------------------------------------
 
 ggsave(
   filename = "Trajetoria_Alpha_DPLoL10.pdf",
@@ -3363,30 +3131,6 @@ ggsave(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ============================================================
-# COMPOSICAO DOS 22 GRUPOS — DP_LoL,10
-# ============================================================
-
-# 1. Recuperar a particao
 if (!exists("particoes")) {
   objetos = readRDS(
     "objetos_completos_dpmm_lol_2025.rds"
@@ -3395,15 +3139,12 @@ if (!exists("particoes")) {
   particoes = objetos$particoes
 }
 
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
-
 particao = particoes[[nome_config]]
 
 if (is.null(particao)) {
   stop("Particao DP_LoL,10 nao encontrada.")
 }
 
-# 2. Calcular os tamanhos dos grupos
 frequencias = table(particao$Cluster_DPMM)
 
 tamanhos_grupos = data.frame(
@@ -3420,15 +3161,12 @@ tamanhos_grupos$Percentual =
   100 * tamanhos_grupos$N_jogadores /
   sum(tamanhos_grupos$N_jogadores)
 
-
-# Atualizar a classificação dos grupos
 tamanhos_grupos$Categoria = ifelse(
   tamanhos_grupos$N_jogadores <= 10,
   "Até 10 jogadores",
   "Mais de 10 jogadores"
 )
 
-# 4. Grafico de barras horizontais
 p_tamanhos_dpmm = ggplot(
   tamanhos_grupos,
   aes(
@@ -3509,15 +3247,6 @@ ggsave(
   bg = "white"
 )
 
-
-
-
-
-
-# ============================================================
-# NOMES DOS JOGADORES POR GRUPO — DP_LoL,10
-# ============================================================
-
 # Recuperar particoes, se necessario
 if (!exists("particoes")) {
   objetos = readRDS(
@@ -3525,9 +3254,6 @@ if (!exists("particoes")) {
   )
   particoes = objetos$particoes
 }
-
-# Selecionar o modelo
-nome_config = "G0-5_beta_forte__Gamma(2,4)"
 
 particao = particoes[[nome_config]]
 
@@ -3546,10 +3272,6 @@ jogadores_por_grupo = jogadores_por_grupo[
   order(as.integer(names(jogadores_por_grupo)))
 ]
 
-# ------------------------------------------------------------
-# MOSTRAR ATE 15 NOMES DE CADA GRUPO NO CONSOLE
-# ------------------------------------------------------------
-
 for (grupo in names(jogadores_por_grupo)) {
   
   jogadores = jogadores_por_grupo[[grupo]]
@@ -3565,10 +3287,6 @@ for (grupo in names(jogadores_por_grupo)) {
     "\n"
   )
 }
-
-# ------------------------------------------------------------
-# SALVAR TODOS OS NOMES DOS 22 GRUPOS EM TXT
-# ------------------------------------------------------------
 
 linhas = unlist(
   lapply(names(jogadores_por_grupo), function(grupo) {
@@ -3590,6 +3308,3 @@ writeLines(
   linhas,
   "Jogadores_por_Grupo_DPLoL10.txt"
 )
-
-cat("\nArquivo TXT salvo com sucesso!\n")
-

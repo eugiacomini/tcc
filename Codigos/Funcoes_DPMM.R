@@ -8,7 +8,7 @@ dpmm_expand_param = function(x, p, name) {
 }
 
 dpmm_posterior_stats = function(nk, sum_x, sum_x2, prior) {
-  # Para um grupo vazio, a posterior coincide com a priori G0.
+  # Para um grupo vazio, a posteriori coincide com a priori G0.
   if (nk == 0L) {
     return(list(mu = prior$mu0, lambda = prior$lambda0,
                 alfa = prior$alfa0, beta = prior$beta0))
@@ -265,12 +265,7 @@ clustering_dpmm = function(
 configuracoes_G0 = function(sensibilidade = FALSE, mu0 = 0) {
   # G0: Normal-Inverse-Gamma independente por dimensao.
   # alfa0/beta0 parametrizam a priori Inverse-Gamma de sigma^2.
-  #
-  # Quando sensibilidade=TRUE, sao comparadas quatro estrategias que
-  # correspondem aos testes de priori ja realizados:
-  # 1) original; 2) apenas centro empirico; 3) apenas beta0 pela variancia
-  # marginal dos dados; 4) ambas as adaptacoes. As variantes empiricas sao
-  # plug-in/empirical-Bayes e devem ser identificadas como tal nos resultados.
+
   if (!isTRUE(sensibilidade)) {
     return(data.frame(
       Config_G0 = "G0-1_original",
@@ -330,15 +325,7 @@ calcular_NMI = function(grupos_estimados, grupos_reais) {
 
 dpmm_particao_dahl = function(groups_samples, C, indices_draws = NULL,
                               K_restrito = NULL) {
-  # Metodo de Dahl (2006): seleciona uma particao MCMC cuja matriz binaria
-  # de co-associacao esta mais proxima da matriz media de coclustering C.
-  # A minimizacao e feita sobre os pares i < j; isso equivale a metade da
-  # distancia de Frobenius quadratica entre as matrizes simetricas.
-  #
-  # IMPORTANTE: indices_draws deve identificar exatamente os draws usados
-  # para calcular C. Assim, a particao escolhida e comparada com a mesma
-  # amostra posterior que originou a matriz media.
-  
+
   groups_samples = as.matrix(groups_samples)
   C = as.matrix(C)
   
@@ -370,7 +357,6 @@ dpmm_particao_dahl = function(groups_samples, C, indices_draws = NULL,
     stop("indices_draws deve conter indices unicos e validos de groups_samples.")
   }
   
-  # Corrigir apenas desvios numericos; preservar dimensoes explicitamente.
   C = (C + t(C)) / 2
   C[] = pmax(0, pmin(1, C))
   diag(C) = 1
@@ -388,11 +374,7 @@ dpmm_particao_dahl = function(groups_samples, C, indices_draws = NULL,
     z = groups_samples[indices_draws[j], ]
     grupos = split(seq_len(n), as.character(z))
     K_draw[j] = length(grupos)
-    
-    # Para cada draw:
-    # L(z) = sum_{i<j} C_ij^2 +
-    #        sum_{grupos g} [choose(n_g,2) - 2*sum_{i<j em g} C_ij].
-    # Essa forma evita construir uma matriz n x n para cada draw.
+
     contribuicao_dentro = 0
     
     for (idx in grupos) {
@@ -408,12 +390,8 @@ dpmm_particao_dahl = function(groups_samples, C, indices_draws = NULL,
     perdas[j] = constante + contribuicao_dentro
   }
   
-  # Dahl classico: minimiza a perda sobre TODAS as particoes candidatas.
   melhor_livre = which.min(perdas)
   
-  # Opcao de resumo: restringir a escolha ao K modal a posteriori.
-  # A MATRIZ C NAO e alterada nem e utilizado o K verdadeiro.
-  # Esta nao e a estimativa original de Dahl, e sim Dahl com K restrito.
   K_restrito_efetivo = if (is.null(K_restrito)) NA_integer_
   else as.integer(K_restrito)
   if (is.null(K_restrito)) {
@@ -435,7 +413,7 @@ dpmm_particao_dahl = function(groups_samples, C, indices_draws = NULL,
   clusters = as.integer(factor(groups_samples[draw_escolhido, ]))
   K_final = length(unique(clusters))
   
-  # Silhueta calculada na dissimilaridade posterior D = 1-C, apenas descritiva.
+  # Silhueta calculada na dissimilaridade posteriori D = 1-C, apenas descritiva.
   D = 1 - C
   diag(D) = 0
   sil_C = NA_real_

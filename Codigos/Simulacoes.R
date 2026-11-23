@@ -58,7 +58,7 @@ executar_simulacoes_dpmm = function(
     n_values = c(100),
     p_values = c(2),
     K_values = c(2, 5, 10),
-    kmeans_grid = 1:10,
+    kmeans_grid = 1:15,
     separacoes = c(baixa = 1, media = 2, muito_alta = 4),
     sd = 1,
     padrao_medias = "todas_variaveis",
